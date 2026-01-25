@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+<html lang="he" dir="rtl" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Discussion State Machine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        width: 100vw;
+        transition: background-color 1s ease;
+        background-color: #f8fafc;
+      }
+      @keyframes wave {
+        0% { transform: translateX(0) translateZ(0) scaleY(1); }
+        50% { transform: translateX(-25%) translateZ(0) scaleY(0.8); }
+        100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+      }
+      .bg-waves {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 200%;
+        height: 35%;
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 100" xmlns="http://www.w3.org/2000/svg"><path d="M0 50 Q 125 0 250 50 T 500 50 T 750 50 T 1000 50 V 100 H 0 Z" fill="white" opacity="0.3"/></svg>');
+        background-repeat: repeat-x;
+        background-position: bottom;
+        animation: wave 12s linear infinite;
+        pointer-events: none;
+        z-index: 1;
+      }
+      @keyframes ripple {
+        0% { transform: scale(0.8); opacity: 1; }
+        100% { transform: scale(2.5); opacity: 0; }
+      }
+      .ripple {
+        position: absolute;
+        border: 2px solid currentColor;
+        border-radius: 50%;
+        animation: ripple 3s infinite;
+      }
+      @keyframes floating {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-15px) scale(1.02); }
+      }
+      @keyframes floating-fast {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-10px) scale(1.04); }
+      }
+      .animate-floating {
+        animation: floating 5s ease-in-out infinite;
+      }
+      .animate-floating-fast {
+        animation: floating-fast 2.5s ease-in-out infinite;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .bubble-imbalance-glow {
+        box-shadow: 0 0 40px rgba(245, 158, 11, 0.4);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="min-h-full">
+    <div id="root" class="min-h-full"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

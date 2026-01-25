@@ -1,0 +1,7 @@
+{
+  "name": "new AI Discussion Flow Optimizer ",
+  "description": "A real-time state machine visualizer for group discussions, featuring automated turn-taking logic, imbalance detection, and Gemini-powered moderation insights.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
