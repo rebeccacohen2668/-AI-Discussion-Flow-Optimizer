@@ -19,7 +19,8 @@ import {
   Zap, 
   Target, 
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  Timer
 } from 'lucide-react';
 
 const INITIAL_SPEAKERS: string[] = [];
@@ -156,6 +157,23 @@ const App: React.FC = () => {
     return { progressPercent, roundElapsed, totalRoundSeconds };
   }, [state, context.turnOrder, context.turnIndex, context.turnSince, context.totalSeconds, context.turnHoldSeconds]);
 
+  // Unified countdown calculator for transient states
+  const transientCountdown = useMemo(() => {
+    const elapsedInState = context.totalSeconds - context.stateSince;
+    
+    if (state === DiscussionState.MONITORING && context.imbalanceFlag && context.imbalanceSince !== null) {
+      const elapsedMonitoring = context.totalSeconds - context.imbalanceSince;
+      return Math.max(0, context.imbalanceHoldSeconds - elapsedMonitoring);
+    }
+    
+    if (state === DiscussionState.IMBALANCE) return Math.max(0, 15 - elapsedInState);
+    if (state === DiscussionState.NUDGE) return Math.max(0, 15 - elapsedInState);
+    if (state === DiscussionState.PAUSE) return Math.max(0, 20 - elapsedInState);
+    if (state === DiscussionState.CHECKIN) return Math.max(0, 20 - elapsedInState);
+    
+    return null;
+  }, [state, context.imbalanceFlag, context.imbalanceSince, context.totalSeconds, context.imbalanceHoldSeconds, context.stateSince]);
+
   return (
     <div className={`h-screen w-screen flex flex-col md:flex-row gap-4 p-4 transition-all duration-1000 overflow-hidden ${theme.fullBg} ${state === DiscussionState.IMBALANCE ? 'imbalance-bg-active' : ''}`}>
       <style>{`
@@ -184,6 +202,7 @@ const App: React.FC = () => {
         .progress-circle { transition: stroke-dashoffset 0.8s ease-out; }
         .round-bar-transition { transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
         .imbalance-glow { box-shadow: 0 0 35px 15px rgba(185, 28, 28, 0.4); }
+        .warning-glow { box-shadow: 0 0 20px 5px rgba(185, 28, 28, 0.2); border-color: rgba(185, 28, 28, 0.3); }
       `}</style>
       <div className={`bg-waves opacity-20 transition-colors duration-1000 ${state === DiscussionState.PAUSE ? 'mix-blend-overlay' : ''}`}></div>
 
@@ -343,11 +362,15 @@ const App: React.FC = () => {
               <p className="text-[#736d52] font-black text-[10px] uppercase tracking-[0.4em] opacity-80">AI DISCUSSION ANALYTICS</p>
             </div>
             
-            <div className={`flex gap-4 lg:gap-6 bg-white/90 p-2.5 px-5 rounded-[2rem] border transition-colors shadow-xl backdrop-blur-md ${state === DiscussionState.IMBALANCE ? 'border-red-200' : 'border-[#d6cdc1]/40'}`}>
+            <div className={`flex gap-4 lg:gap-6 bg-white/90 p-2.5 px-5 rounded-[2rem] border transition-all shadow-xl backdrop-blur-md ${state === DiscussionState.IMBALANCE ? 'border-red-200' : 'border-[#d6cdc1]/40'}`}>
               <div className={`text-right transition-all duration-500 ${isImbalanceMeasureActive ? 'opacity-100' : 'opacity-30'}`}>
-                <div className={`text-[10px] lg:text-xs uppercase font-black flex items-center justify-end gap-1 mb-0.5 ${state === DiscussionState.IMBALANCE ? 'text-red-900' : 'text-[#3d2e25]'}`}><BarChart2 size={12}/> מדד איזון</div>
-                <div className={`text-2xl lg:text-4xl font-black tabular-nums leading-none tracking-tighter ${context.imbalanceFlag ? 'text-red-900 animate-pulse' : 'text-[#1a1816]'}`}>
-                  {(context.dominanceScore || 0).toFixed(2)}
+                <div className={`text-[10px] lg:text-xs uppercase font-black flex items-center justify-end gap-1 mb-0.5 ${state === DiscussionState.IMBALANCE ? 'text-red-900' : 'text-[#3d2e25]'}`}>
+                  <BarChart2 size={12}/> מדד איזון
+                </div>
+                <div className="flex flex-col items-end">
+                   <div className={`text-2xl lg:text-4xl font-black tabular-nums leading-none tracking-tighter ${context.imbalanceFlag ? 'text-red-900 animate-pulse' : 'text-[#1a1816]'}`}>
+                     {(context.dominanceScore || 0).toFixed(2)}
+                   </div>
                 </div>
               </div>
               <div className="w-px h-10 bg-[#d6cdc1]/60 self-center mx-1"></div>
@@ -386,14 +409,28 @@ const App: React.FC = () => {
                   )}
                 </div>
               </div>
-            ) : state === DiscussionState.PAUSE ? (
+            ) : state === DiscussionState.PAUSE || state === DiscussionState.CHECKIN ? (
               <div className="flex flex-col items-center gap-6 animate-in zoom-in duration-1000">
-                 <div className="shush-sphere w-48 h-48 lg:w-56 lg:h-56 rounded-full bg-[#ebe6db] border-[10px] border-[#d6cdc1]/50 flex items-center justify-center shadow-inner">
-                    <Wind size={60} className="text-[#736d52]" />
+                 <div className="shush-sphere w-48 h-48 lg:w-56 lg:h-56 rounded-full bg-[#ebe6db] border-[10px] border-[#d6cdc1]/50 flex items-center justify-center shadow-inner relative">
+                    {state === DiscussionState.PAUSE ? <Wind size={60} className="text-[#736d52]" /> : <CheckCircle size={60} className="text-[#4a635d]" />}
+                    {/* Visual Progress ring for Pause/Checkin */}
+                    <svg className="absolute inset-[-10px] -rotate-90 pointer-events-none" viewBox="0 0 100 100" style={{ width: 'calc(100% + 20px)', height: 'calc(100% + 20px)' }}>
+                       <circle 
+                         cx="50" cy="50" r="48" fill="none" 
+                         stroke={state === DiscussionState.PAUSE ? "#8a6e42" : "#4a635d"} strokeWidth="2" 
+                         strokeDasharray="301.6"
+                         strokeDashoffset={301.6 * (1 - (transientCountdown || 0) / 20)}
+                         className="progress-circle opacity-30"
+                       />
+                    </svg>
                  </div>
                  <div className="text-center">
-                   <div className="text-6xl lg:text-7xl font-black text-[#1a1816] tabular-nums tracking-tighter">00:{String(Math.max(0, 20 - context.silenceSeconds)).padStart(2, '0')}</div>
-                   <p className="text-xl lg:text-2xl font-bold text-[#736d52] mt-4 tracking-tight">מרחב שקט להתבוננות והפנמה</p>
+                   <div className={`text-6xl lg:text-7xl font-black tabular-nums tracking-tighter ${state === DiscussionState.PAUSE ? 'text-[#1a1816]' : 'text-[#2c3d38]'}`}>
+                     00:{String(Math.ceil(transientCountdown || 0)).padStart(2, '0')}
+                   </div>
+                   <p className="text-xl lg:text-2xl font-bold text-[#736d52] mt-4 tracking-tight">
+                     {state === DiscussionState.PAUSE ? "מרחב שקט להתבוננות והפנמה" : "בודקים אם אפשר להמשיך בשיח"}
+                   </p>
                  </div>
               </div>
             ) : (
@@ -404,8 +441,8 @@ const App: React.FC = () => {
                   const talkTime = context.talkTime[s] || 0;
                   const growthFactor = totalTalk > 0 ? (talkTime / avgTalk) : 1;
                   
-                  const isFlagged = context.imbalanceFlag && 
-                                   (talkTime / avgTalk > 1.5) && 
+                  const isFlagged = (context.imbalanceFlag && (talkTime / avgTalk > 1.5)) && 
+                                   (state === DiscussionState.IMBALANCE || state === DiscussionState.MONITORING) && 
                                    state !== DiscussionState.NUDGE && 
                                    state !== DiscussionState.CHECKIN;
                   
@@ -429,7 +466,7 @@ const App: React.FC = () => {
                     >
                       <div 
                         style={{ width: size, height: size }} 
-                        className={`rounded-full bg-gradient-to-br ${style.gradient} shadow-lg transition-all duration-1000 relative flex items-center justify-center border-[5px] border-white/60 ${isActive ? 'ring-[8px] ring-[#4a635d]/20 scale-110 z-30 shadow-xl' : 'opacity-90 z-10'} ${isFlagged ? 'imbalance-glow' : ''} ${state === DiscussionState.NUDGE ? 'shadow-inner ring-2 ring-white/30' : ''}`}
+                        className={`rounded-full bg-gradient-to-br ${style.gradient} shadow-lg transition-all duration-1000 relative flex items-center justify-center border-[5px] border-white/60 ${isActive ? 'ring-[8px] ring-[#4a635d]/20 scale-110 z-30 shadow-xl' : 'opacity-90 z-10'} ${isFlagged ? (state === DiscussionState.IMBALANCE ? 'imbalance-glow' : 'warning-glow scale-105') : ''} ${state === DiscussionState.NUDGE ? 'shadow-inner ring-2 ring-white/30' : ''}`}
                       >
                          {isActive && (
                            <svg className="absolute inset-0 -rotate-90 pointer-events-none overflow-visible" viewBox="0 0 100 100">
@@ -496,7 +533,11 @@ const App: React.FC = () => {
               {isLoadingTip && <div className="flex gap-1.5"><div className="w-1 h-1 bg-white/60 rounded-full animate-bounce"></div><div className="w-1 h-1 bg-white/60 rounded-full animate-bounce [animation-delay:0.2s]"></div></div>}
             </div>
             <p className={`text-sm lg:text-xl font-bold leading-tight drop-shadow-sm truncate-3-lines`}>
-              {isQuietViewActive ? "עכשיו זמן להקשיב למי שטרם השמיע את קולו" : moderationTip}
+              {isQuietViewActive 
+                ? "עכשיו זמן להקשיב למי שטרם השמיע את קולו" 
+                : (transientCountdown !== null && state !== DiscussionState.PAUSE && state !== DiscussionState.CHECKIN
+                    ? `נראה שיש חוסר איזון בשיח. המערכת תתערב בעוד ${Math.ceil(transientCountdown)} שניות.` 
+                    : moderationTip)}
             </p>
           </div>
         </div>

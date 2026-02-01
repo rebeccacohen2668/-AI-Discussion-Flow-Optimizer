@@ -12,7 +12,6 @@ export function calculateDominance(talkTime: Record<string, number>, speakers: s
   const max = Math.max(...times);
   const mean = totalTalkTime / speakers.length;
   
-  // Formula from the user provided image:
   return (max - mean) / (totalTalkTime + 1e-6);
 }
 
@@ -37,8 +36,9 @@ export class DiscussionEngine {
       autoMode: thresholds.autoMode ?? true,
       quietMode: false,
       imbalanceScoreThreshold: thresholds.imbalanceScoreThreshold ?? 0.35,
-      imbalanceHoldSeconds: thresholds.imbalanceHoldSeconds ?? 15,
-      nudgeHoldSeconds: thresholds.nudgeHoldSeconds ?? 10,
+      imbalanceHoldSeconds: 15, // 15s warning in Monitoring
+      nudgeHoldSeconds: 15,     // 15s in Nudge mode
+
       turnHoldSeconds: 60,
 
       imbalanceSince: null,
@@ -100,12 +100,12 @@ export class DiscussionEngine {
 
     switch (this.state) {
       case DiscussionState.MONITORING: {
-        // If in quiet mode, we stop the progression to IMBALANCE state
         if (this.ctx.quietMode) {
           this.ctx.imbalanceSince = null;
           break;
         }
 
+        // Only process imbalance if the flag is active (handles Grace Period and restored balance)
         if (this.ctx.imbalanceFlag) {
           if (this.ctx.imbalanceSince === null) this.ctx.imbalanceSince = now;
           if (now - this.ctx.imbalanceSince >= this.ctx.imbalanceHoldSeconds) {
@@ -113,14 +113,13 @@ export class DiscussionEngine {
             this.setState(DiscussionState.IMBALANCE);
           }
         } else {
-          if (this.ctx.imbalanceSince !== null && (this.ctx.silenceSeconds > 2)) {
-             this.ctx.imbalanceSince = null;
-          }
+          // Reset the timer if balance is restored or speaker changed
+          this.ctx.imbalanceSince = null;
         }
         break;
       }
       case DiscussionState.IMBALANCE: {
-        if (now - this.ctx.stateSince >= 10) this.setState(DiscussionState.NUDGE);
+        if (now - this.ctx.stateSince >= 15) this.setState(DiscussionState.NUDGE);
         break;
       }
       case DiscussionState.NUDGE: {
@@ -158,15 +157,20 @@ export class DiscussionEngine {
   }
 
   private updateMetrics() {
+    // Basic metrics calculation
+    this.ctx.dominanceScore = calculateDominance(this.ctx.talkTime, this.ctx.speakers, this.ctx.totalTalkTime);
+    
+    // Requested: Grace Period of 15 seconds at the start of the discussion.
+    const isGracePeriod = this.ctx.totalSeconds < 15;
+
     if (this.state === DiscussionState.STRUCTURED || 
         this.state === DiscussionState.PAUSE || 
         this.state === DiscussionState.NUDGE || 
         this.state === DiscussionState.CHECKIN ||
-        this.ctx.quietMode) {
-      this.ctx.dominanceScore = 0;
+        this.ctx.quietMode ||
+        isGracePeriod) { // Added isGracePeriod check
       this.ctx.imbalanceFlag = false;
     } else {
-      this.ctx.dominanceScore = calculateDominance(this.ctx.talkTime, this.ctx.speakers, this.ctx.totalTalkTime);
       const isScoreImbalanced = this.ctx.dominanceScore >= this.ctx.imbalanceScoreThreshold;
       const isMonologueImbalanced = this.ctx.currentMonologueSeconds >= 15;
       this.ctx.imbalanceFlag = isScoreImbalanced || isMonologueImbalanced;
