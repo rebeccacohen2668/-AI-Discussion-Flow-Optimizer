@@ -18,9 +18,18 @@ export interface EngineContext {
   talkTime: Record<string, number>;
   totalSeconds: number;
   silenceSeconds: number;
+  
+  /** Total duration of all talking activity (sum of all speech), used as denominator in Dominance Score. */
+  totalTalkTime: number;
+
+  /** Current continuous talk duration for the current active speaker. Resets on change/silence. */
+  currentMonologueSeconds: number;
 
   /** If true, the engine will advance states automatically on each TICK. */
   autoMode: boolean;
+
+  /** If true, imbalance detection is paused and score is forced to 0. */
+  quietMode: boolean;
 
   imbalanceScoreThreshold: number;
   imbalanceHoldSeconds: number;
@@ -51,6 +60,7 @@ export type DiscussionEvent =
   | { type: 'NEXT_TURN' }
   | { type: 'SET_QUIET_SPEAKER', name: string | null }
   | { type: 'SET_AUTO_MODE', enabled: boolean }
+  | { type: 'SET_QUIET_MODE', enabled: boolean }
   | { type: 'TURNS_COMPLETE' }
   | { type: 'PAUSE_DONE' }
   | { type: 'CHECKIN', canContinue: boolean }

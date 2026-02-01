@@ -17,7 +17,7 @@
         min-height: 100vh;
         width: 100vw;
         transition: background-color 1s ease;
-        background-color: #f8fafc;
+        background-color: #f2ede4;
       }
       @keyframes wave {
         0% { transform: translateX(0) translateZ(0) scaleY(1); }
@@ -30,15 +30,15 @@
         left: 0;
         width: 200%;
         height: 35%;
-        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 100" xmlns="http://www.w3.org/2000/svg"><path d="M0 50 Q 125 0 250 50 T 500 50 T 750 50 T 1000 50 V 100 H 0 Z" fill="white" opacity="0.3"/></svg>');
+        background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1000 100" xmlns="http://www.w3.org/2000/svg"><path d="M0 50 Q 125 0 250 50 T 500 50 T 750 50 T 1000 50 V 100 H 0 Z" fill="%23d6cdc1" opacity="0.4"/></svg>');
         background-repeat: repeat-x;
         background-position: bottom;
-        animation: wave 12s linear infinite;
+        animation: wave 18s linear infinite;
         pointer-events: none;
         z-index: 1;
       }
       @keyframes ripple {
-        0% { transform: scale(0.8); opacity: 1; }
+        0% { transform: scale(0.8); opacity: 0.5; }
         100% { transform: scale(2.5); opacity: 0; }
       }
       .ripple {
@@ -69,7 +69,7 @@
         scrollbar-width: none;
       }
       .bubble-imbalance-glow {
-        box-shadow: 0 0 40px rgba(245, 158, 11, 0.4);
+        box-shadow: 0 0 40px rgba(178, 126, 102, 0.2);
       }
     </style>
   <script type="importmap">
